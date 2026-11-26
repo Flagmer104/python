@@ -9,4 +9,6 @@ dist/
 .coverage*
 htmlcov/
 .tox/
-docs/_build/
+docs/_build/logs/
+__pycache__/
+*.pyc

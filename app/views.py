@@ -1,6 +1,8 @@
-from flask import render_template, request, redirect, url_for, session, make_response
+from flask import render_template, request, redirect, url_for, session, make_response, flash
 from . import app
 from datetime import timedelta
+from . import contact_logger
+from .forms import ContactForm
 
 @app.route("/login",  methods=['GET', 'POST'])
 def login():
@@ -81,3 +83,22 @@ def admin():
     to_url = url_for("greetings", name="administrator", _external=True)    # --> "http://localhost:8080/hi/administrator"
     print(to_url)
     return redirect(to_url)
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    form = ContactForm()
+    if form.validate_on_submit():
+        try:
+            contact_logger.info(
+                "name=%s | email=%s | phone=%s | topic=%s | message=%s",
+                form.name.data, form.email.data, form.phone.data or "-",
+                form.topic.data, form.message.data.replace("\n", " "),
+            )
+        except OSError:
+            flash("Не вдалося зберегти ваше повідомлення. Спробуйте пізніше.", "danger")
+        else:
+            flash("Дякуємо! Ваше повідомлення надіслано й збережено.", "success")
+        return redirect(url_for("contact"))  # Post/Redirect/Get
+    if request.method == "POST":
+        flash("Форму заповнено з помилками. Перевірте виділені поля.", "danger")
+    return render_template("contact.html", form=form)
