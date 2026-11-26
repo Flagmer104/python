@@ -1,7 +1,6 @@
 .venv/
 __pycache__/
 *.pyc
-/lab6/
-/lab9/
-/lab10/
-/lab9.rar
+.env
+instance/
+*.sqlite
