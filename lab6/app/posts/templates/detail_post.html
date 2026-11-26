@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block css %}
+    <link rel="stylesheet" href="{{ url_for('posts.static', filename='css/posts.css') }}">
+{% endblock %}
+
+{% block content %}
+<article class="post-detail">
+    <span class="badge badge-category mb-2">{{ post.category.value }}</span>
+    <h1>{{ post.title }}</h1>
+    <p class="text-muted">
+        {{ post.posted.strftime("%Y-%m-%d %H:%M") }} · автор: <strong>{{ post.author }}</strong>
+        {% if not post.is_active %}<span class="badge bg-secondary">прихований</span>{% endif %}
+    </p>
+    <div class="post-content mb-4">{{ post.content }}</div>
+    <a class="btn btn-primary" href="{{ url_for('posts.update_post', id=post.id) }}">Edit</a>
+    <a class="btn btn-danger" href="{{ url_for('posts.delete_post', id=post.id) }}">Delete</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('posts.all_posts') }}">Back</a>
+</article>
+{% endblock %}
