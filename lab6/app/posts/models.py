@@ -1,7 +1,8 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Text, DateTime, Enum
+from sqlalchemy import Boolean, String, Text, DateTime, Enum
+from sqlalchemy.sql import true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .. import db
@@ -29,6 +30,9 @@ class Post(db.Model):
         Enum(Category, values_callable=lambda e: [m.value for m in e], name="category"),
         default=Category.other,
     )
+    # server_default потрібен, щоб міграція могла додати NOT NULL колонки до таблиці з даними
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    author: Mapped[str] = mapped_column(String(20), default="Anonymous", server_default="Anonymous")
 
     def __repr__(self):
         return f"<Post {self.id}: {self.title!r}>"
