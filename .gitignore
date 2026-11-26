@@ -12,3 +12,5 @@ htmlcov/
 docs/_build/logs/
 __pycache__/
 *.pyc
+data/
+app/products/static/uploads/
