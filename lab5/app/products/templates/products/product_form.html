@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4 mx-auto" style="max-width: 600px;">
+    <h2 class="text-center mb-4">{{ title }}</h2>
+    <form method="POST" enctype="multipart/form-data" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_field(form.name, placeholder="Назва товару") }}
+        {{ render_field(form.content, placeholder="Опис товару") }}
+        {{ render_field(form.price, placeholder="0.00") }}
+        {{ render_field(form.category, input_class="form-select") }}
+        {{ render_field(form.quantity) }}
+        {% if product and product.image %}
+            <p class="small">Поточне зображення:<br>
+            <img src="{{ url_for('product.static', filename=product.image) }}" height="80" class="rounded"></p>
+        {% endif %}
+        {{ render_field(form.image) }}
+        <div class="text-center">
+            {{ form.submit(class="btn btn-success px-4") }}
+            <a class="btn btn-outline-secondary" href="{{ url_for('.get_products') }}">Скасувати</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

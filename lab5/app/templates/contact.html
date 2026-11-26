@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}Контакти{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4 mx-auto" style="max-width: 600px;">
+    <h2 class="text-center mb-4">Контактна форма</h2>
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_field(form.name, placeholder="Ваше ім'я") }}
+        {{ render_field(form.email, placeholder="name@example.com") }}
+        {{ render_field(form.phone) }}
+        {{ render_field(form.topic, input_class="form-select") }}
+        {{ render_field(form.message, placeholder="Текст повідомлення") }}
+        <div class="text-center">
+            {{ form.submit(class="btn btn-primary px-4") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
