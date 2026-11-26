@@ -14,7 +14,7 @@ TOPIC_CHOICES = [
 class ContactForm(FlaskForm):
     name = StringField(
         "Ім'я",
-        validators=[DataRequired(message="Вкажіть ім'я"), Length(min=2, max=50)],
+        validators=[DataRequired(message="Вкажіть ім'я"), Length(min=2, max=50, message="Ім'я має містити від 2 до 50 символів")],
     )
     email = StringField(
         "Email",
@@ -28,7 +28,7 @@ class ContactForm(FlaskForm):
     topic = SelectField("Тема", choices=TOPIC_CHOICES, validators=[DataRequired(message="Оберіть тему")])
     message = TextAreaField(
         "Повідомлення",
-        validators=[DataRequired(message="Введіть повідомлення"), Length(min=10, max=1000)],
+        validators=[DataRequired(message="Введіть повідомлення"), Length(min=10, max=1000, message="Повідомлення має містити від 10 до 1000 символів")],
         render_kw={"rows": 5},
     )
     submit = SubmitField("Надіслати")
