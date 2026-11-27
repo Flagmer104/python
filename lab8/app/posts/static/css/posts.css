@@ -40,3 +40,7 @@
 .post-tags {
     margin-bottom: 1.5rem;
 }
+
+.post-tags .tag-badge {
+    margin-right: .35rem;
+}
