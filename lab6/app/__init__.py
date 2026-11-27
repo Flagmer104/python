@@ -1,31 +1,59 @@
 import logging
 import os
 
-from flask import Flask
+from dotenv import load_dotenv
+from flask import Flask, render_template
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+from .config import config
 
-app = Flask(__name__)
-app.secret_key = "secret_key_12345"
-app.config["WTF_CSRF_ENABLED"] = True
-app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 МБ на завантаження
-app.config["CONTACT_LOG"] = os.path.join(BASE_DIR, "logs", "contacts.log")
-app.config["PRODUCTS_DB"] = os.path.join(BASE_DIR, "data", "products.json")
-app.config["UPLOAD_FOLDER"] = os.path.join(BASE_DIR, "app", "products", "static", "uploads")
 
-# окремий логер для даних контактної форми
-os.makedirs(os.path.dirname(app.config["CONTACT_LOG"]), exist_ok=True)
-contact_logger = logging.getLogger("contacts")
-contact_logger.setLevel(logging.INFO)
-if not contact_logger.handlers:
-    _h = logging.FileHandler(app.config["CONTACT_LOG"], encoding="utf-8")
-    _h.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
-    contact_logger.addHandler(_h)
+class Base(DeclarativeBase):
+    pass
 
-from .utils.repo import product_repo
-product_repo.init(app.config["PRODUCTS_DB"])
 
-from . import views
+db = SQLAlchemy(model_class=Base)
+migrate = Migrate()
 
-from .products import post_bp
-app.register_blueprint(post_bp)
+
+def create_app(config_name=None):
+    """Application factory: створює застосунок для вказаного середовища."""
+    load_dotenv()
+    config_name = config_name or os.getenv("FLASK_CONFIG", "default")
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
+    if config_name == "production" and not app.config["SECRET_KEY"]:
+        raise RuntimeError("SECRET_KEY must be set in production")
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # окремий логер для даних контактної форми (лаба 5)
+    os.makedirs(os.path.dirname(app.config["CONTACT_LOG"]), exist_ok=True)
+    contact_logger = logging.getLogger("contacts")
+    contact_logger.setLevel(logging.INFO)
+    if not any(isinstance(h, logging.FileHandler) for h in contact_logger.handlers):
+        handler = logging.FileHandler(app.config["CONTACT_LOG"], encoding="utf-8")
+        handler.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
+        contact_logger.addHandler(handler)
+
+    # сховище товарів на TinyDB (лаба 5)
+    from .utils.repo import product_repo
+
+    product_repo.init(app.config["PRODUCTS_DB"])
+
+    from .posts import post_bp
+    from .products import product_bp
+    from .views import main_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(product_bp)
+    app.register_blueprint(post_bp, url_prefix="/post")
+
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return render_template("404.html"), 404
+
+    return app

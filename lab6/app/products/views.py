@@ -4,7 +4,7 @@ import uuid
 from flask import render_template, abort, flash, redirect, url_for, request, current_app
 from werkzeug.utils import secure_filename
 
-from . import post_bp
+from . import product_bp
 from ..utils.repo import product_repo
 from .forms import ProductForm, DeleteForm
 
@@ -35,17 +35,17 @@ def get_or_404(product_id):
     return product
 
 
-@post_bp.route("/product")
+@product_bp.route("/product")
 def get_products():
-    return render_template("products.html", products=product_repo.get_all())
+    return render_template("products/products.html", products=product_repo.get_all())
 
 
-@post_bp.route("/product/<int:id>")
+@product_bp.route("/product/<int:id>")
 def detail_post(id):
-    return render_template("detail_post.html", product=get_or_404(id), delete_form=DeleteForm())
+    return render_template("products/detail_post.html", product=get_or_404(id), delete_form=DeleteForm())
 
 
-@post_bp.route("/product/add", methods=["GET", "POST"])
+@product_bp.route("/product/add", methods=["GET", "POST"])
 def create_product():
     form = ProductForm()
     if form.validate_on_submit():
@@ -62,10 +62,10 @@ def create_product():
         return redirect(url_for(".detail_post", id=product["id"]))
     if request.method == "POST":
         flash("Помилка у формі. Перевірте поля.", "danger")
-    return render_template("product_form.html", form=form, title="Додати товар")
+    return render_template("products/product_form.html", form=form, title="Додати товар")
 
 
-@post_bp.route("/product/<int:id>/edit", methods=["GET", "POST"])
+@product_bp.route("/product/<int:id>/edit", methods=["GET", "POST"])
 def edit_product(id):
     product = get_or_404(id)
     form = ProductForm(data=product) if request.method == "GET" else ProductForm()
@@ -86,10 +86,10 @@ def edit_product(id):
         return redirect(url_for(".detail_post", id=id))
     if request.method == "POST":
         flash("Помилка у формі. Перевірте поля.", "danger")
-    return render_template("product_form.html", form=form, title="Редагувати товар", product=product)
+    return render_template("products/product_form.html", form=form, title="Редагувати товар", product=product)
 
 
-@post_bp.route("/product/<int:id>/delete", methods=["POST"])
+@product_bp.route("/product/<int:id>/delete", methods=["POST"])
 def delete_product(id):
     product = get_or_404(id)
     if DeleteForm().validate_on_submit():

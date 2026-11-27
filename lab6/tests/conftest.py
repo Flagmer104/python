@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import app as flask_app
+from app import create_app
 from app.utils.repo import product_repo
 
 # мінімальний валідний PNG 1x1
@@ -17,17 +17,15 @@ PNG = bytes.fromhex(
 
 @pytest.fixture
 def client(tmp_path):
-    original = flask_app.config["PRODUCTS_DB"]
+    flask_app = create_app("testing")
     flask_app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,
         UPLOAD_FOLDER=str(tmp_path / "app" / "static" / "uploads"),
+        CONTACT_LOG=str(tmp_path / "contacts.log"),
     )
     # тимчасове сховище, щоб тести не чіпали data/products.json
     product_repo.init(str(tmp_path / "products.json"))
     yield flask_app.test_client()
     product_repo.db.close()
-    product_repo.init(original)
 
 
 def valid_data(**over):

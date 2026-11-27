@@ -36,7 +36,6 @@ def test_phone_optional(client):
 
 
 def test_csrf_enforced(client):
-    from app import app
-    app.config["WTF_CSRF_ENABLED"] = True
+    client.application.config["WTF_CSRF_ENABLED"] = True
     r = client.post("/contact", data=form())
     assert r.status_code == 200 and "alert-danger" in r.get_data(as_text=True)

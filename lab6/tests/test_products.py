@@ -1,7 +1,7 @@
 import io
 
 from app.utils.repo import product_repo
-from conftest import PNG, valid_data
+from .conftest import PNG, valid_data
 
 
 def add(client, **over):
@@ -140,7 +140,7 @@ def test_missing_image_placeholder(client):
 
 
 def test_too_large_upload_rejected(client):
-    from app import app
+    app = client.application
     app.config["MAX_CONTENT_LENGTH"] = 1024
     try:
         data = valid_data()

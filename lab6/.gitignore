@@ -9,8 +9,12 @@ dist/
 .coverage*
 htmlcov/
 .tox/
-docs/_build/logs/
+docs/_build/
+logs/
 __pycache__/
 *.pyc
 data/
 app/products/static/uploads/
+instance/
+*.sqlite
+.pytest_cache/
