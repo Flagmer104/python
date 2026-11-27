@@ -7,6 +7,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///data.sqlite")
     WTF_CSRF_ENABLED = True
+    # SQL_ECHO=1 вмикає журнал SQL-запитів (SQLALCHEMY_ECHO) — для лабораторної: порівняння lazy/eager
+    SQLALCHEMY_ECHO = os.getenv("SQL_ECHO") == "1"
 
 
 class DevelopmentConfig(Config):
