@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, String, Text, DateTime, Enum, ForeignKey
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, Text, DateTime, Enum
 from sqlalchemy.sql import true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +19,26 @@ class Category(enum.Enum):
 
 def utcnow():
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+# Асоціативна таблиця для зв'язку "багато до багатьох" Post <-> Tag
+post_tags = db.Table(
+    "post_tags",
+    Column("post_id", Integer, ForeignKey("post.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
+)
+
+
+class Tag(db.Model):
+    __tablename__ = "tags"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+
+    posts: Mapped[list["Post"]] = relationship(secondary=post_tags, back_populates="tags")
+
+    def __repr__(self):
+        return f"Tag({self.name!r})"
 
 
 class User(db.Model):
@@ -59,6 +79,7 @@ class Post(db.Model):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     user: Mapped["User | None"] = relationship(back_populates="posts")
+    tags: Mapped[list["Tag"]] = relationship(secondary=post_tags, back_populates="posts")
 
     def __repr__(self):
         return f"<Post {self.id}: {self.title!r}>"
