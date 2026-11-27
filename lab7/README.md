@@ -1,61 +1,34 @@
-# Лабораторна робота 6 — ORM, SQLAlchemy 2.0, CRUD (Flask)
+# Лабораторна робота 7 — Зв'язки. Міграції (Flask, SQLAlchemy 2.0, Flask-Migrate)
 
-> Лаба 6 побудована **на основі лаби 5** (так сказано в завданні): уся лаба 5 (контактна форма Flask-WTF, блюпринт `products` з TinyDB, сторінки `/hi`, `/homepage`, `/admin`, кукі, логін) перенесена в цей застосунок, а блюпринт `posts` з SQLAlchemy додано поверх. Чиста лаба 5 — у гілці `lab5`.
-
-Блог із постами: application factory, Flask-SQLAlchemy 2.0, Flask-Migrate, Flask-WTF, Bootstrap 5, unittest.
+Продовжує лабораторну №6 (а та — лабораторну №5): пререквізити завдання (БД, `db`, Flask-Migrate) і блюпринт `products` уже є в проєкті. Моделі `Product` і `Category` додано в `app/products/models.py`; міграції лежать у тому ж `migrations/` після міграцій лаби 6 (`a7d3a4fa7dba`, `6c24b2df3afa`). Решта застосунку (контактна форма, TinyDB-товари, пости) працює як і раніше. Моделі `Category` (1) → `Product` (N), міграції, naming convention,
+додавання полів до заповненої таблиці, міграція з даними.
 
 ## Запуск
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
-.venv\Scripts\flask db upgrade     # створює instance/data.sqlite
-.venv\Scripts\flask run            # http://127.0.0.1:5000/post
-.venv\Scripts\python -m pytest -q            # 53 тести (лаба 5 + лаба 6)
+.venv\Scripts\flask db upgrade     # створює instance/data.sqlite з усіма даними
+.venv\Scripts\flask db history
 ```
 
-Конфігурація береться з `.env` (`FLASK_APP`, `FLASK_CONFIG`, `SECRET_KEY`, `DATABASE_URL`).
-`FLASK_CONFIG` = `development` | `testing` | `production`.
+## Історія міграцій
 
-## Маршрути
+| Міграція | Що робить |
+|---|---|
+| `a7d3a4fa7dba`, `6c24b2df3afa` | з лаби 6: таблиця `post` |
+| `538e9e9b34f3` Add Product | таблиця `products` |
+| `9eaf4d496c45` Add Category | таблиця `categories`, FK `products.category_id` (ім'я FK задано вручну, інакше SQLite batch падає з `Constraint must have a name`) |
+| `6637e67bf92a` Naming convention | іменовані обмеження (`uq_categories_name`) |
+| `8579c00a3399` Add active to Product | `active BOOLEAN NOT NULL` з `server_default=sa.true()` |
+| `ada51320c115` Add created_at with server_default | `created_at` з `server_default=func.now()` |
+| `8a6821233e48` Insert data into products table | ручна міграція: категорії та товари, `ON CONFLICT (name) DO NOTHING`, відкат у `downgrade()` |
 
-| Метод | Шлях | Шаблон |
-|---|---|---|
-| GET/POST | `/post/create` | `add_post.html` |
-| GET | `/post` | `all_posts.html` |
-| GET | `/post/<id>` | `detail_post.html` |
-| GET/POST | `/post/<id>/update` | `add_post.html` |
-| GET/POST | `/post/<id>/delete` | `delete_confirm.html` |
-| — | 404 | `404.html` |
+## Скріншоти (`screenshots/`)
 
-### Перенесено з лаби 5
+- `01_schema.png` — схема таблиць
+- `02_data.png` — дані в БД
+- `03_history.png` — `flask db current` та `flask db history`
+- `04_history_downgrade.png` — `flask db downgrade` + `flask db history` (+ повернення `upgrade`)
 
-| Метод | Шлях | Опис |
-|---|---|---|
-| GET/POST | `/contact` | контактна форма (Flask-WTF, лог у `logs/contacts.log`, PRG) |
-| GET | `/product`, `/product/<id>` | товари (TinyDB, `data/products.json`) |
-| GET/POST | `/product/add`, `/product/<id>/edit`, POST `/product/<id>/delete` | CRUD товарів |
-| GET | `/homepage`, `/hi/`, `/hi/<name>`, `/admin` | прості сторінки |
-| GET | `/set_cookie`, `/get_cookie`, `/delete_cookie` | кукі |
-
-Блюпринти: `main` (`app/views.py`), `product` (`app/products`), `posts` (`app/posts`, префікс `/post`). Тести лаби 5 (pytest) і лаби 6 (unittest) запускаються разом: `python -m pytest`.
-
-Автор поста береться з `session["username"]` (сторінка `/login`), інакше `Anonymous`.
-
-## Скріншоти
-
-Папка `screenshots/`: частини 2–3 (`01`–`03`), інтерфейс частини 6 (`04`–`14`), модульні тести (`15`).
-Термінальні скріни: `scripts/term.py` + `scripts/render.py`. UI-скріни зняті до перенесення лаби 5 (у навбарі тоді не було Homepage/Contact/Products).
-
-## Контрольні запитання (коротко)
-
-1. **Application factory** — функція `create_app(config_name)`, що створює екземпляр застосунку; дає різні конфігурації (dev/test/prod), ізольовані тести та відсутність циклічних імпортів.
-2. **Вибір конфігурації** — за назвою (`config[config_name]` + `app.config.from_object`), назва береться з аргументу чи змінної `FLASK_CONFIG`.
-3. **`.env` і python-dotenv** — зберігають налаштування й секрети поза кодом; `load_dotenv()` завантажує їх у `os.environ`.
-4. **Dev / Testing / Production** — Dev: `DEBUG`, локальна БД; Testing: in-memory SQLite, без CSRF; Production: без `DEBUG`, секрет і БД лише зі змінних середовища.
-5. **Реєстрація блюпринта** — `app.register_blueprint(post_bp, url_prefix="/post")`.
-6. **ORM** — відображає Python-класи на таблиці, дає писати запити об'єктами без сирого SQL.
-7. **БД через CLI** — `flask db init` → `flask db migrate -m "..."` → `flask db upgrade`.
-8. **`flask shell`** — інтерактивна консоль з контекстом застосунку: перевірка моделей і запитів вручну.
-9. **Модель — форма — шаблон** — view валідує `FlaskForm`, переносить дані в модель/з моделі, шаблон малює форму макросом `render_field`.
-10. **Зміна схеми без втрати даних** — змінити модель → `flask db migrate` → `flask db upgrade` (для NOT NULL колонок — `server_default`).
+Відтворити: `scripts/term.py` (транскрипт) + `scripts/render.py` (PNG, Playwright + Edge).
