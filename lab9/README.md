@@ -44,6 +44,7 @@ python -m venv .venv
 
 | Файл | Що показує |
 |---|---|
+| `00_shell_hashed_password` | п. 2: користувач із bcrypt-хешем у `flask shell` (`scripts/shell_demo.py`) |
 | `01_register_form` | форма реєстрації |
 | `02_register_success` | успішна реєстрація (flash + сторінка входу) |
 | `03_register_user_exists` | користувач уже існує (username та email) |
@@ -56,5 +57,3 @@ python -m venv .venv
 | `10_after_logout` | після виходу меню знову «Реєстрація / Вхід» |
 
 Відтворити: `python scripts/make_screenshots.py` (Playwright + Edge, тимчасова БД, сервер на :5059).
-
-Скріншот пункту 2 завдання (хеш пароля у `flask shell`) не знімався окремо; хеш перевіряється в `tests/test_auth.py`.
