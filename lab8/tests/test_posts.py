@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, db
-from app.posts.models import Post, Category
+from app.posts.models import Post, Category, User
 
 
 def form_data(**over):
@@ -12,6 +12,7 @@ def form_data(**over):
         "enabled": "y",
         "publish_date": "2025-01-15T10:30",
         "category": "news",
+        "author_id": "1",
     }
     data.update(over)
     return data
@@ -24,6 +25,9 @@ class PostsTestCase(unittest.TestCase):
         self.ctx.push()
         db.create_all()
         self.client = self.app.test_client()
+        self.user = User(username="vlad", email="vlad@ex.com", password="x")
+        db.session.add(self.user)
+        db.session.commit()
 
     def tearDown(self):
         db.session.remove()
@@ -48,7 +52,7 @@ class PostsTestCase(unittest.TestCase):
     def test_model_defaults_and_repr(self):
         post = self.make_post()
         self.assertTrue(post.is_active)
-        self.assertEqual(post.author, "Anonymous")
+        self.assertIsNone(post.user)  # автор необовʼязковий на рівні моделі
         self.assertIsNotNone(post.posted)
         self.assertIn("Post", repr(post))
 
@@ -70,15 +74,17 @@ class PostsTestCase(unittest.TestCase):
         r = self.client.post("/post/create", data=form_data(), follow_redirects=True)
         self.assertIn("Post added successfully", r.get_data(as_text=True))
 
-    def test_create_author_anonymous_by_default(self):
-        self.client.post("/post/create", data=form_data())
-        self.assertEqual(db.session.scalar(db.select(Post)).author, "Anonymous")
+    def test_create_saves_selected_author(self):
+        other = User(username="second", email="second@ex.com", password="x")
+        db.session.add(other)
+        db.session.commit()
+        self.client.post("/post/create", data=form_data(author_id=str(other.id)))
+        self.assertEqual(db.session.scalar(db.select(Post)).user.username, "second")
 
-    def test_create_author_from_session(self):
-        with self.client.session_transaction() as s:
-            s["username"] = "vlad"
-        self.client.post("/post/create", data=form_data())
-        self.assertEqual(db.session.scalar(db.select(Post)).author, "vlad")
+    def test_create_unknown_author_rejected(self):
+        r = self.client.post("/post/create", data=form_data(author_id="999"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(db.session.scalars(db.select(Post)).all(), [])
 
     def test_create_invalid_does_not_save(self):
         r = self.client.post("/post/create", data=form_data(title="", content=""))
@@ -163,11 +169,14 @@ class PostsTestCase(unittest.TestCase):
         self.assertEqual(updated.title, "After")
         self.assertEqual(updated.category, Category.tech)
 
-    def test_update_keeps_author(self):
-        post = self.make_post(author="orig")
-        self.client.post(f"/post/{post.id}/update", data=form_data())
+    def test_update_changes_author(self):
+        other = User(username="second", email="second@ex.com", password="x")
+        db.session.add(other)
+        db.session.commit()
+        post = self.make_post(user=self.user)
+        self.client.post(f"/post/{post.id}/update", data=form_data(author_id=str(other.id)))
         db.session.expire_all()
-        self.assertEqual(db.session.get(Post, post.id).author, "orig")
+        self.assertEqual(db.session.get(Post, post.id).user_id, other.id)
 
     def test_update_invalid(self):
         post = self.make_post(title="Keep")
