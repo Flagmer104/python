@@ -11,4 +11,4 @@ product_bp = Blueprint(
     static_url_path="/product-static",
 )
 
-from . import views  # noqa: E402,F401
+from . import models, views  # noqa: E402,F401
