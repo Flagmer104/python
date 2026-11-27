@@ -29,6 +29,7 @@ class Product(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
     category: Mapped["Category | None"] = relationship("Category", back_populates="products")
