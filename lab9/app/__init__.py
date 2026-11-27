@@ -3,6 +3,8 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask, render_template
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
@@ -26,6 +28,11 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
+login_manager.login_view = "main.login"  # куди перенаправляти неавторизованих
+login_manager.login_message = "Увійдіть, щоб переглянути цю сторінку."
+login_manager.login_message_category = "warning"
 
 
 def create_app(config_name=None):
@@ -39,6 +46,15 @@ def create_app(config_name=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
+    bcrypt.init_app(app)
+    login_manager.init_app(app)
+
+    from .posts.models import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        """Завантажує поточного користувача за id із сесії."""
+        return db.session.get(User, int(user_id))
 
     # окремий логер для даних контактної форми (лаба 5)
     os.makedirs(os.path.dirname(app.config["CONTACT_LOG"]), exist_ok=True)

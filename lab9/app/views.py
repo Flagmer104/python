@@ -5,7 +5,11 @@ from flask import (
     Blueprint, flash, make_response, redirect, render_template, request, session, url_for,
 )
 
-from .forms import ContactForm
+from flask_login import current_user, login_required, login_user, logout_user
+
+from . import db
+from .forms import ContactForm, LoginForm, RegistrationForm
+from .posts.models import User
 
 main_bp = Blueprint("main", __name__)
 
@@ -15,26 +19,58 @@ def index():
     return redirect(url_for("posts.all_posts"))
 
 
+@main_bp.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("main.account"))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data.lower())
+        user.set_password(form.password.data)  # bcrypt-хеш перед збереженням
+        db.session.add(user)
+        db.session.commit()
+        flash(f"Акаунт «{user.username}» створено. Тепер можна увійти.", "success")
+        return redirect(url_for("main.login"))
+    return render_template("register.html", form=form)
+
+
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        username = request.form.get("login", "").strip()
-        if username:
-            session["username"] = username[:20]
-            return redirect(url_for("main.profile"))
-    return render_template("login.html")
+    if current_user.is_authenticated:
+        return redirect(url_for("main.account"))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(db.select(User).where(User.email == form.email.data.lower()))
+        if user and user.check_password(form.password.data):  # порівняння хешів
+            login_user(user, remember=form.remember.data)
+            session["username"] = user.username
+            flash("Ви успішно увійшли.", "success")
+            next_page = request.args.get("next")
+            if next_page and next_page.startswith("/") and not next_page.startswith("//"):
+                return redirect(next_page)
+            return redirect(url_for("main.account"))
+        flash("Невірний email або пароль.", "danger")
+    return render_template("login.html", form=form)
 
 
-@main_bp.route("/profile")
-def profile():
-    if "username" in session:
-        return render_template("profile.html", username=session["username"])
-    return redirect(url_for("main.login"))
+@main_bp.route("/account")
+@login_required
+def account():
+    return render_template("account.html", username=session.get("username", current_user.username))
+
+
+@main_bp.route("/users")
+@login_required
+def users():
+    all_users = db.session.scalars(db.select(User).order_by(User.id)).all()
+    return render_template("users.html", users=all_users, count=len(all_users))
 
 
 @main_bp.route("/logout")
 def logout():
+    logout_user()
     session.pop("username", None)
+    flash("Ви вийшли з акаунта.", "info")
     return redirect(url_for("main.index"))
 
 

@@ -9,11 +9,13 @@
       <a class="nav-link" href="{{ url_for('posts.create_post') }}">Add Post</a>
     </div>
     <div class="navbar-nav flex-row gap-3">
-      {% if session.username %}
-        <a class="nav-link" href="{{ url_for('main.profile') }}">{{ session.username }}</a>
-        <a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a>
+      {% if current_user.is_authenticated %}
+        <a class="nav-link" href="{{ url_for('main.users') }}">Users</a>
+        <a class="nav-link" href="{{ url_for('main.account') }}">Профіль ({{ current_user.username }})</a>
+        <a class="nav-link" href="{{ url_for('main.logout') }}">Вихід</a>
       {% else %}
-        <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
+        <a class="nav-link" href="{{ url_for('main.register') }}">Реєстрація</a>
+        <a class="nav-link" href="{{ url_for('main.login') }}">Вхід</a>
       {% endif %}
     </div>
   </div>

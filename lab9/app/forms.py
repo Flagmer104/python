@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, Optional, Regexp
+from wtforms import BooleanField, PasswordField, StringField, SelectField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, Regexp, ValidationError
 
 TOPIC_CHOICES = [
     ("", "— оберіть тему —"),
@@ -33,3 +33,46 @@ class ContactForm(FlaskForm):
     )
     submit = SubmitField("Надіслати")
 
+
+class RegistrationForm(FlaskForm):
+    """Реєстрація: унікальність username та email перевіряється в БД."""
+
+    username = StringField("Ім'я користувача", validators=[
+        DataRequired(message="Вкажіть ім'я користувача"),
+        Length(min=3, max=20, message="Від 3 до 20 символів"),
+    ])
+    email = StringField("Email", validators=[
+        DataRequired(message="Вкажіть email"),
+        Email(message="Невірний формат email"),
+    ])
+    password = PasswordField("Пароль", validators=[
+        DataRequired(message="Вкажіть пароль"),
+        Length(min=6, message="Пароль має містити щонайменше 6 символів"),
+    ])
+    confirm_password = PasswordField("Підтвердіть пароль", validators=[
+        DataRequired(message="Підтвердіть пароль"),
+        EqualTo("password", message="Паролі не збігаються"),
+    ])
+    submit = SubmitField("Зареєструватися")
+
+    def validate_username(self, field):
+        from . import db
+        from .posts.models import User
+
+        if db.session.scalar(db.select(User).where(User.username == field.data)):
+            raise ValidationError("Таке ім'я користувача вже зайняте")
+
+    def validate_email(self, field):
+        from . import db
+        from .posts.models import User
+
+        if db.session.scalar(db.select(User).where(User.email == field.data.lower())):
+            raise ValidationError("Користувач з таким email уже існує")
+
+
+class LoginForm(FlaskForm):
+    email = StringField("Email", validators=[
+        DataRequired(message="Вкажіть email"), Email(message="Невірний формат email")])
+    password = PasswordField("Пароль", validators=[DataRequired(message="Вкажіть пароль")])
+    remember = BooleanField("Запам'ятати мене")
+    submit = SubmitField("Увійти")

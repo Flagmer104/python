@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Профіль{% endblock %}
+
+{% block content %}
+<h1>Профіль</h1>
+<table class="table w-auto">
+    <tr><th>Ім'я користувача (із сесії)</th><td>{{ username }}</td></tr>
+    <tr><th>Email</th><td>{{ current_user.email }}</td></tr>
+    <tr><th>Постів</th><td>{{ current_user.posts|length }}</td></tr>
+</table>
+<a class="btn btn-outline-secondary" href="{{ url_for('main.users') }}">Усі користувачі</a>
+<a class="btn btn-outline-danger" href="{{ url_for('main.logout') }}">Вийти</a>
+{% endblock %}

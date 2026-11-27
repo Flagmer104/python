@@ -28,6 +28,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
+    BCRYPT_LOG_ROUNDS = 4  # швидше хешування в тестах
 
 
 class ProductionConfig(Config):

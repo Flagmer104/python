@@ -5,9 +5,9 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.sql import true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask_login import UserMixin
 
-from .. import db
+from .. import bcrypt, db
 
 
 class Category(enum.Enum):
@@ -41,7 +41,7 @@ class Tag(db.Model):
         return f"Tag({self.name!r})"
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -53,10 +53,11 @@ class User(db.Model):
     posts: Mapped[list["Post"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, raw):
-        self.password = generate_password_hash(raw)
+        """Зберігає bcrypt-хеш (Flask-Bcrypt), а не відкритий пароль."""
+        self.password = bcrypt.generate_password_hash(raw).decode("utf-8")
 
     def check_password(self, raw):
-        return check_password_hash(self.password, raw)
+        return bcrypt.check_password_hash(self.password, raw)
 
     def __repr__(self):
         return f"User({self.username!r}, {self.email!r})"
