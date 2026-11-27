@@ -1,7 +1,8 @@
-# Лабораторна робота 8 — ORM. Зв'язки (Flask, SQLAlchemy 2.0)
+# Лабораторна робота 9 — Реєстрація та вхід (Flask-Bcrypt, Flask-Login)
 
-Продовження проєкту лаби 7 → 6 → 5: у застосунку є все з попередніх лаб (контактна форма, товари TinyDB, пости, моделі `Product`/`Category` та їхні міграції), бо завдання працює з `Post` з лаби 6. Додано `User` (1:N з `Post`), `Tag` (M:N з `Post`
-через `post_tags`), вибір автора й тегів у формі, оптимізацію завантаження зв'язків.
+Продовжує лабу 8 (модель `User` з лаби 8; а та — 7 → 6 → 5): у застосунку лишається все попереднє
+(контактна форма, товари TinyDB, пости з авторами й тегами, міграції). Додано реєстрацію, вхід із bcrypt-хешами,
+Flask-Login та тести.
 
 ## Запуск
 
@@ -9,58 +10,51 @@
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\flask db upgrade
-.venv\Scripts\flask run                       # http://127.0.0.1:5000/post
-.venv\Scripts\python -m pytest -q                            # 62 тести (лаби 5–8)
+.venv\Scripts\flask run                 # http://127.0.0.1:5000/register
+.venv\Scripts\python -m pytest -q       # 73 тести (лаби 5–9)
 ```
 
-## Модель даних
+## Що зроблено
 
-| Таблиця | Поля / зв'язки |
+**Частина 1 — реєстрація**
+
+| Пункт | Реалізація |
 |---|---|
-| `users` | `id`, `username` (unique), `email` (unique), `password` (хеш); `posts` (1:N, `cascade="all, delete-orphan"`) |
-| `post` | колишнє `author` замінено на `user_id` (FK → `users.id`, nullable) + `user`; `tags` (M:N) |
-| `tags` | `id`, `name` (unique); `posts` (M:N) |
-| `post_tags` | асоціативна таблиця: `post_id`, `tag_id` (складений PK) |
+| Flask-Bcrypt | `bcrypt = Bcrypt()` у `app/__init__.py`; `User.set_password()` / `check_password()` (`app/posts/models.py`) зберігають лише bcrypt-хеш (`$2b$…`) |
+| Форма реєстрації | `RegistrationForm` (`app/forms.py`): `Email()`, довжина, `EqualTo`, унікальність `username` та `email` перевіряється в БД (`validate_username`, `validate_email`) |
+| Маршрут | `GET/POST /register` → збереження користувача → flash → редірект на `/login` |
+| Вхід | `GET/POST /login`: пошук за email, порівняння хешів; `session['username'] = user.username`; редірект на `/account` |
+| Профіль | `/account` (`account.html`): дані з сесії та БД |
+| Список користувачів | `/users` (`users.html`): таблиця й кількість, повідомлення, якщо список порожній |
 
-`user_id` nullable: пости, створені до появи користувачів, лишаються без автора (крок 6 призначає їм автора).
-Назви обмежень задає `naming_convention` у `Base.metadata`, тому міграції з FK у SQLite працюють без правок.
+**Частина 2 — Flask-Login**
 
-## Міграції
+`login_manager` (`login_view = "main.login"`), `user_loader` за id з БД, `User(UserMixin, db.Model)`, `login_user`,
+`logout_user`, `@login_required` на `/account` і `/users`. Авторизовані користувачі з `/register` та `/login`
+перенаправляються на `/account`; у меню замість «Реєстрація / Вхід» з'являються «Профіль» та «Вихід»
+(`includes/nav.html`, `current_user.is_authenticated`). Перенаправлення після входу на `?next=` обмежене локальними шляхами.
 
-| Ревізія | Що |
-|---|---|
-| `8a6821233e48` (лаба 7) | попередня ревізія |
-| `c6118fd16140` Add User | таблиця `users` |
-| `3e2b6abe83dc` Replace Post.author with user_id | `post.user_id` + FK, видалено `post.author` |
-| `6fee6f7f60e3` Add Tag and post_tags | `tags`, `post_tags` |
+**Частина 3 — тести** (`tests/test_auth.py`, 11 тестів): завантаження сторінок реєстрації та входу; збереження
+користувача й хешування пароля; унікальність username/email; валідація; вхід і вихід; неправильний пароль; захищені
+сторінки; список користувачів; зміна меню; редірект авторизованих.
 
-## Пункт 13 — оптимізація завантаження (7 дописів, 2 автори, 3 теги)
-
-Запуск: `python scripts/eager_demo.py lazy` та `python scripts/eager_demo.py eager` (кожен у новому процесі,
-SQL-журнал через `SQLALCHEMY_ECHO`, рахуються лише SELECT під час вибірки та циклу).
-
-| Варіант запиту | Кількість дописів | Кількість SELECT |
-|---|---|---|
-| Без `.options()` | 7 | 10 (1 + 2 автори + 7 запитів тегів) |
-| Із `joinedload()` та `selectinload()` | 7 | 2 (1 JOIN з авторами + 1 `IN` по тегах) |
-
-Без `.options()` виникає проблема N+1: автор вантажиться ледачо (кожен унікальний автор — окремий SELECT, повторні
-беруться з identity map), теги — окремим SELECT на кожен допис. `joinedload(Post.user)` підтягує автора тим самим
-запитом через `LEFT OUTER JOIN`, `selectinload(Post.tags)` — одним `SELECT ... WHERE post_id IN (...)`.
-У застосунку така вибірка вже використана у списку постів (`all_posts`).
+Зміна `User`: пароль тепер bcrypt (раніше werkzeug). Схема таблиці та міграції не змінювались (поле `password` — `String(255)`).
 
 ## Скріншоти (`screenshots/`)
 
-| Файл | Пункт |
+| Файл | Що показує |
 |---|---|
-| `02_users_table`, `04_post_table` | 2, 4 — таблиці `users` та `post` після міграцій |
-| `05_shell_add_users`, `06_shell_assign_posts`, `07_shell_user_posts` | 5, 6, 7 |
-| `08_ui_author_select` | 8 — список авторів із БД у формі |
-| `09_tags_tables`, `10_shell_tags` | 9, 10 |
-| `11_ui_tags_select`, `12_ui_post_detail_tags`, `12_ui_posts_list_tags` | 11, 12 |
-| `13a_without_options`, `13b_joinedload_selectinload` | 13 — код, результат, SQL-журнал |
-| `14_unit_tests`, `15_db_posts_authors_tags` | тести (35 OK), підсумкові дані |
+| `01_register_form` | форма реєстрації |
+| `02_register_success` | успішна реєстрація (flash + сторінка входу) |
+| `03_register_user_exists` | користувач уже існує (username та email) |
+| `04_register_validation_errors` | помилки валідації (email, довжина пароля, паролі не збігаються) |
+| `05_login_required_redirect` | `/users` без входу → `/login?next=…` |
+| `06_login_wrong_password` | невірний пароль |
+| `07_account_after_login` | `/account` після входу, меню «Профіль / Вихід» |
+| `08_users_list` | список користувачів і кількість |
+| `09_register_redirects_to_account` | авторизований на `/register` потрапляє на `/account` |
+| `10_after_logout` | після виходу меню знову «Реєстрація / Вхід» |
 
-Скріншоти зняті на ізольованій копії проєкту (до перенесення в єдиний ланцюжок), тому навбар на UI-скрінах без Homepage/Contact/Products; зміст пунктів 7–13 той самий.
+Відтворити: `python scripts/make_screenshots.py` (Playwright + Edge, тимчасова БД, сервер на :5059).
 
-Скрипти: `scripts/term.py` + `scripts/render.py` (термінал), `scripts/make_screenshots.py` (UI, Playwright + Edge).
+Скріншот пункту 2 завдання (хеш пароля у `flask shell`) не знімався окремо; хеш перевіряється в `tests/test_auth.py`.
