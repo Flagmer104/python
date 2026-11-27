@@ -1,14 +1,27 @@
-from flask import render_template, redirect, url_for, flash, session, request
+from flask import render_template, redirect, url_for, flash, request
+from sqlalchemy.orm import joinedload, selectinload
 
 from . import post_bp
 from .forms import PostForm, DeleteForm
-from .models import Post, Category
+from .models import Post, Category, Tag
 from .. import db
+
+
+def load_tags(ids):
+    if not ids:
+        return []
+    return list(db.session.scalars(db.select(Tag).where(Tag.id.in_(ids))))
 
 
 @post_bp.route("")
 def all_posts():
-    stmt = db.select(Post).where(Post.is_active.is_(True)).order_by(Post.posted.desc())
+    # Оптимізація: автори одним JOIN, теги одним додатковим SELECT ... IN (без N+1)
+    stmt = (
+        db.select(Post)
+        .options(joinedload(Post.user), selectinload(Post.tags))
+        .where(Post.is_active.is_(True))
+        .order_by(Post.posted.desc())
+    )
     posts = db.session.scalars(stmt).all()
     return render_template("all_posts.html", posts=posts)
 
@@ -29,7 +42,8 @@ def create_post():
             posted=form.publish_date.data,
             category=Category(form.category.data),
             is_active=form.enabled.data,
-            author=session.get("username", "Anonymous")[:20],
+            user_id=form.author_id.data,
+            tags=load_tags(form.tags.data),
         )
         db.session.add(post)
         db.session.commit()
@@ -51,6 +65,8 @@ def update_post(id):
             "enabled": post.is_active,
             "publish_date": post.posted,
             "category": post.category.value,
+            "author_id": post.user_id,
+            "tags": [t.id for t in post.tags],
         })
     else:
         form = PostForm()
@@ -60,6 +76,8 @@ def update_post(id):
         post.is_active = form.enabled.data
         post.posted = form.publish_date.data
         post.category = Category(form.category.data)
+        post.user_id = form.author_id.data
+        post.tags = load_tags(form.tags.data)
         db.session.commit()
         flash("Post updated successfully", "success")
         return redirect(url_for("posts.detail_post", id=post.id))

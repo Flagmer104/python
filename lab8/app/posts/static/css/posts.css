@@ -27,3 +27,20 @@
     font-size: 1.1rem;
     line-height: 1.7;
 }
+
+.tag-badge {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffb74d;
+    border-radius: 999px;
+    font-weight: 500;
+    padding: .35em .75em;
+}
+
+.post-tags {
+    margin-bottom: 1.5rem;
+}
+
+.post-tags .tag-badge {
+    margin-right: .35rem;
+}

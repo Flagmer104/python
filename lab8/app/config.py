@@ -9,6 +9,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///data.sqlite")
     WTF_CSRF_ENABLED = True
+    # SQL_ECHO=1 вмикає журнал SQL-запитів (SQLALCHEMY_ECHO) — для лабораторної: порівняння lazy/eager
+    SQLALCHEMY_ECHO = os.getenv("SQL_ECHO") == "1"
     # --- з лаби 5: контактна форма та товари (TinyDB) ---
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 МБ на завантаження
     CONTACT_LOG = os.path.join(BASE_DIR, "logs", "contacts.log")

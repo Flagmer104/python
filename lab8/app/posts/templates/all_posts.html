@@ -21,7 +21,10 @@
                 <h5 class="card-title">{{ post.title }}</h5>
                 <p class="card-text text-muted">{{ post.content[:100] }}{% if post.content|length > 100 %}…{% endif %}</p>
                 <div class="mt-auto">
-                    <small class="text-muted d-block mb-2">{{ post.posted.strftime("%Y-%m-%d %H:%M") }} · {{ post.author }}</small>
+                    <small class="text-muted d-block mb-2">{{ post.posted.strftime("%Y-%m-%d %H:%M") }} · {{ post.user.username if post.user else "—" }}</small>
+                    {% if post.tags %}
+                    <div class="mb-2">{% for tag in post.tags %}<span class="badge tag-badge">{{ tag.name }}</span> {% endfor %}</div>
+                    {% endif %}
                     <a href="{{ url_for('posts.detail_post', id=post.id) }}" class="btn btn-primary btn-sm">Read more</a>
                 </div>
             </div>
