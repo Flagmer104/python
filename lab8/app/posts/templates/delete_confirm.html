@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Видалення поста{% endblock %}
+
+{% block content %}
+<div class="card border-danger shadow-sm p-4 mx-auto" style="max-width: 600px;">
+    <h2 class="text-danger">Видалити пост?</h2>
+    <p>Ви дійсно хочете видалити пост <strong>«{{ post.title }}»</strong>? Цю дію не можна скасувати.</p>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.submit(class="btn btn-danger") }}
+        <a class="btn btn-outline-secondary" href="{{ url_for('posts.detail_post', id=post.id) }}">Скасувати</a>
+    </form>
+</div>
+{% endblock %}

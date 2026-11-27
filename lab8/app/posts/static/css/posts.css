@@ -1,0 +1,29 @@
+.post-card {
+    border: none;
+    border-radius: 12px;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 .75rem 1.5rem rgba(0, 0, 0, .15) !important;
+}
+
+.post-img {
+    height: 160px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+.badge-category {
+    background: #6f42c1;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.post-detail .post-content {
+    white-space: pre-wrap;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
